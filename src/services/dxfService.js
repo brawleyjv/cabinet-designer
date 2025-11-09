@@ -39,7 +39,7 @@ class DxfService {
     this.dxf.addLayer('CUT', DxfWriter.ACI.RED, 'CONTINUOUS');
     this.dxf.addLayer('POCKET', DxfWriter.ACI.BLUE, 'CONTINUOUS');
     this.dxf.addLayer('DRILL', DxfWriter.ACI.GREEN, 'CONTINUOUS');
-    this.dxf.addLayer('LABEL', DxfWriter.ACI.YELLOW, 'CONTINUOUS');
+    this.dxf.addLayer('LABEL', DxfWriter.ACI.BLACK, 'CONTINUOUS');
     this.dxf.addLayer('SHEET_OUTLINE', DxfWriter.ACI.WHITE, 'CONTINUOUS');
 
     // Draw sheet outline
@@ -172,18 +172,99 @@ class DxfService {
       this.dxf.drawLine(centerX, cutY, centerX, cutY + cutHeight);
     }
 
-    // Add depth annotation OUTSIDE the part area on LABEL layer
+    // Calculate recommended bit size and toolpath
+    const recommendedBit = this.getRecommendedBit(cut);
+    const toolpath = this.getToolpathType(cut);
+    
+    // Add detailed machining annotations OUTSIDE the part area on LABEL layer
     this.dxf.setActiveLayer('LABEL');
     const labelX = cutX + cutWidth / 2;
-    const labelY = cutY + cutHeight + 0.1;
+    const labelY = cutY + cutHeight + 0.15;
     
+    // Line 1: Cut type and depth
     this.dxf.drawText(
       labelX,
       labelY,
+      0.1,
+      0,
+      `${cut.type.toUpperCase()} - ${cut.depth.toFixed(3)}" DEEP`
+    );
+    
+    // Line 2: Toolpath recommendation
+    this.dxf.drawText(
+      labelX,
+      labelY - 0.15,
       0.08,
       0,
-      `${cut.type.toUpperCase()} ${cut.depth.toFixed(3)}" DEEP`
+      `TOOLPATH: ${toolpath}`
     );
+    
+    // Line 3: Recommended bit
+    this.dxf.drawText(
+      labelX,
+      labelY - 0.28,
+      0.08,
+      0,
+      `BIT: ${recommendedBit}`
+    );
+    
+    // Line 4: Width and length
+    this.dxf.drawText(
+      labelX,
+      labelY - 0.41,
+      0.07,
+      0,
+      `${cut.width.toFixed(3)}" wide x ${(cut.length || (cutWidth > cutHeight ? cutWidth : cutHeight)).toFixed(3)}" long`
+    );
+  }
+
+  /**
+   * Get recommended bit size for a cut
+   */
+  getRecommendedBit(cut) {
+    const depth = cut.depth;
+    const width = cut.width;
+    
+    if (cut.type === 'dado' || cut.type === 'pocket') {
+      // For dados, bit should be close to width or smaller for multiple passes
+      if (width >= 0.75) {
+        return '3/4" straight bit (or 1/2" with 2 passes)';
+      } else if (width >= 0.5) {
+        return '1/2" straight bit (or smaller with multiple passes)';
+      } else if (width >= 0.375) {
+        return '3/8" straight bit';
+      } else if (width >= 0.25) {
+        return '1/4" straight bit';
+      } else {
+        return '1/8" straight bit';
+      }
+    } else if (cut.type === 'rabbet') {
+      return `${width.toFixed(3)}" rabbeting bit or straight bit`;
+    } else if (cut.type === 'groove') {
+      return `${width.toFixed(3)}" straight bit`;
+    }
+    
+    return 'Straight bit matching width';
+  }
+
+  /**
+   * Get toolpath type for a cut
+   */
+  getToolpathType(cut) {
+    const depth = cut.depth;
+    const width = cut.width;
+    
+    if (cut.type === 'dado') {
+      return 'POCKET (Flat bottom, full depth)';
+    } else if (cut.type === 'rabbet') {
+      return 'PROFILE (Edge cut to depth)';
+    } else if (cut.type === 'groove') {
+      return 'POCKET (Centered groove)';
+    } else if (cut.type === 'pocket') {
+      return 'POCKET (Clear material to depth)';
+    }
+    
+    return 'POCKET';
   }
 
   /**

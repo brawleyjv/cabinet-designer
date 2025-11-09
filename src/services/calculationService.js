@@ -134,7 +134,7 @@ class CabinetCalculator {
           width: offset,
           depth: this.dadoDepth,
           length: this.depth,
-          notes: `Receives top panel. Cut ${this.dadoDepth.toFixed(3)}" deep (${((this.dadoDepth/this.actualThickness)*100).toFixed(0)}% of thickness)`
+          notes: `Receives top panel. POCKET toolpath ${this.dadoDepth.toFixed(3)}" deep (${((this.dadoDepth/this.actualThickness)*100).toFixed(0)}% thickness). Use ${this.getRecommendedBitSize(offset)} straight bit.`
         },
         {
           type: 'dado',
@@ -143,7 +143,7 @@ class CabinetCalculator {
           width: offset,
           depth: this.dadoDepth,
           length: this.depth,
-          notes: `Receives bottom panel. Cut ${this.dadoDepth.toFixed(3)}" deep`
+          notes: `Receives bottom panel. POCKET toolpath ${this.dadoDepth.toFixed(3)}" deep. Use ${this.getRecommendedBitSize(offset)} straight bit.`
         }
       ]
     });
@@ -164,7 +164,7 @@ class CabinetCalculator {
           width: offset,
           depth: this.dadoDepth,
           length: this.depth,
-          notes: `Receives top panel. Cut ${this.dadoDepth.toFixed(3)}" deep (${((this.dadoDepth/this.actualThickness)*100).toFixed(0)}% of thickness)`
+          notes: `Receives top panel. POCKET toolpath ${this.dadoDepth.toFixed(3)}" deep (${((this.dadoDepth/this.actualThickness)*100).toFixed(0)}% thickness). Use ${this.getRecommendedBitSize(offset)} straight bit.`
         },
         {
           type: 'dado',
@@ -173,7 +173,7 @@ class CabinetCalculator {
           width: offset,
           depth: this.dadoDepth,
           length: this.depth,
-          notes: `Receives bottom panel. Cut ${this.dadoDepth.toFixed(3)}" deep`
+          notes: `Receives bottom panel. POCKET toolpath ${this.dadoDepth.toFixed(3)}" deep. Use ${this.getRecommendedBitSize(offset)} straight bit.`
         }
       ]
     });
@@ -547,6 +547,24 @@ class CabinetCalculator {
         notes: `Attaches ${railHeight}" above cabinet bottom, flush with back edge. Provides wall anchoring.`
       }
     ];
+  }
+
+  /**
+   * Get recommended bit size for a dado width
+   */
+  getRecommendedBitSize(width) {
+    if (width >= 0.75) {
+      return '3/4"';
+    } else if (width >= 0.5) {
+      return '1/2"';
+    } else if (width >= 0.375) {
+      return '3/8"';
+    } else if (width >= 0.25) {
+      return '1/4"';
+    } else if (width >= 0.125) {
+      return '1/8"';
+    }
+    return '1/8" or smaller';
   }
 
   /**
