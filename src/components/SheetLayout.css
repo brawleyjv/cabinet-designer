@@ -1,0 +1,139 @@
+.sheet-layout {
+  background: white;
+  padding: 1.5rem;
+  border-radius: 4px;
+  border: 1px solid #e0e0e0;
+  margin-bottom: 2rem;
+}
+
+.sheet-layout h3 {
+  color: #2c3e50;
+  font-size: 1.1rem;
+  margin-bottom: 1rem;
+}
+
+.empty-message {
+  text-align: center;
+  color: #95a5a6;
+  font-style: italic;
+  padding: 2rem;
+}
+
+.layout-summary {
+  display: flex;
+  gap: 2rem;
+  margin-bottom: 1.5rem;
+  padding: 1rem;
+  background: #f8f9fa;
+  border-radius: 4px;
+}
+
+.summary-stat {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.stat-label {
+  font-size: 0.85rem;
+  color: #7f8c8d;
+  font-weight: 500;
+}
+
+.stat-value {
+  font-size: 1.25rem;
+  color: #2c3e50;
+  font-weight: bold;
+}
+
+.sheets-container {
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+}
+
+.sheet-item {
+  border: 2px solid #dee2e6;
+  border-radius: 8px;
+  overflow: hidden;
+  background: white;
+}
+
+.sheet-header {
+  background: #34495e;
+  color: white;
+  padding: 1rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.sheet-header h4 {
+  margin: 0;
+  font-size: 1.1rem;
+}
+
+.sheet-info {
+  display: flex;
+  gap: 1.5rem;
+  font-size: 0.9rem;
+}
+
+.efficiency {
+  padding: 0.25rem 0.5rem;
+  border-radius: 3px;
+  font-weight: bold;
+}
+
+.efficiency.good {
+  background: #27ae60;
+  color: white;
+}
+
+.efficiency.ok {
+  background: #f39c12;
+  color: white;
+}
+
+.efficiency.poor {
+  background: #e74c3c;
+  color: white;
+}
+
+.parts-count {
+  background: rgba(255,255,255,0.2);
+  padding: 0.25rem 0.5rem;
+  border-radius: 3px;
+}
+
+.sheet-svg {
+  display: block;
+  margin: 0 auto;
+  background: white;
+}
+
+.part-on-sheet {
+  cursor: pointer;
+  transition: opacity 0.2s;
+}
+
+.part-on-sheet:hover {
+  opacity: 1 !important;
+}
+
+.sheet-stats {
+  display: flex;
+  gap: 2rem;
+  padding: 1rem;
+  background: #f8f9fa;
+  border-top: 1px solid #dee2e6;
+  font-size: 0.9rem;
+}
+
+.sheet-stats .stat {
+  color: #555;
+}
+
+.sheet-stats strong {
+  color: #2c3e50;
+}

@@ -1,0 +1,146 @@
+.part-detail-view {
+  background: white;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  padding: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.part-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 2px solid #3498db;
+}
+
+.part-header h3 {
+  color: #2c3e50;
+  margin: 0;
+  font-size: 1.2rem;
+}
+
+.part-specs {
+  display: flex;
+  gap: 1rem;
+  font-size: 0.9rem;
+}
+
+.spec-item {
+  background: #ecf0f1;
+  padding: 0.25rem 0.5rem;
+  border-radius: 3px;
+  color: #34495e;
+}
+
+.spec-item.qty {
+  background: #3498db;
+  color: white;
+  font-weight: bold;
+}
+
+.part-svg {
+  display: block;
+  margin: 0 auto 1rem;
+  background: white;
+  border: 1px solid #e0e0e0;
+  border-radius: 4px;
+}
+
+.cuts-detail-list {
+  margin-top: 1.5rem;
+  padding-top: 1rem;
+  border-top: 1px solid #e0e0e0;
+}
+
+.cuts-detail-list h4 {
+  color: #2c3e50;
+  margin-bottom: 0.75rem;
+  font-size: 1rem;
+}
+
+.cuts-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.85rem;
+}
+
+.cuts-table thead {
+  background: #34495e;
+  color: white;
+}
+
+.cuts-table th {
+  padding: 0.5rem;
+  text-align: left;
+  font-weight: 600;
+  border: 1px solid #2c3e50;
+}
+
+.cuts-table td {
+  padding: 0.5rem;
+  border: 1px solid #ddd;
+  color: #2c3e50;
+}
+
+.cuts-table tbody tr:nth-child(even) {
+  background: #f8f9fa;
+}
+
+.cuts-table tbody tr:hover {
+  background: #e3f2fd;
+}
+
+.cuts-table .cut-type {
+  font-weight: bold;
+  color: #e74c3c;
+  text-transform: uppercase;
+}
+
+.cuts-table .depth {
+  font-weight: bold;
+  color: #27ae60;
+}
+
+.cuts-table .notes {
+  font-size: 0.8rem;
+  color: #7f8c8d;
+  font-style: italic;
+}
+
+.part-notes {
+  margin-top: 1rem;
+  padding: 0.75rem;
+  background: #fff3cd;
+  border-left: 4px solid #ffc107;
+  border-radius: 4px;
+  font-size: 0.9rem;
+  color: #856404;
+}
+
+.part-notes strong {
+  color: #664300;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .part-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.5rem;
+  }
+  
+  .part-specs {
+    flex-wrap: wrap;
+  }
+  
+  .cuts-table {
+    font-size: 0.75rem;
+  }
+  
+  .cuts-table th,
+  .cuts-table td {
+    padding: 0.25rem;
+  }
+}

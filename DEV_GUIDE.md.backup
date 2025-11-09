@@ -1,0 +1,348 @@
+# 🪚 Cabinet Designer – React Dev README (Claude 4.0 + GitHub Copilot)
+
+## 🧠 Project Overview
+A browser-based cabinet design tool built in React. It allows users to input cabinet specs, apply joinery logic, visualize nested layouts, and export DXF files, cut lists, and ZIP bundles for CNC or manual fabrication.
+
+---
+
+## 🖥️ Dev Environment Setup
+
+### ✅ Prerequisites
+- Node.js ≥ 18.x
+- npm ≥ 9.x
+- VSCode with GitHub Copilot enabled
+- Claude 4.0 via Copilot Chat or CLI
+- XAMPP (for optional PHP backend)
+- Git (version control)
+
+### ✅ Recommended VSCode Extensions
+| Extension            | Purpose                          |
+|---------------------|----------------------------------|
+| ESLint               | Code quality and linting         |
+| Prettier             | Auto-formatting                  |
+| React Developer Tools | Inspect React components        |
+| GitLens              | Git history and insights         |
+| REST Client          | Test APIs directly in VSCode     |
+
+---
+
+## 🗂️ Project Structure
+
+```
+cabinet-designer/
+├── public/
+│   └── index.html
+├── src/
+│   ├── components/
+│   │   ├── CabinetForm.jsx
+│   │   ├── PartPreview.jsx
+│   │   ├── SheetLayout.jsx
+│   │   ├── DXFExport.jsx
+│   │   ├── CutList.jsx
+│   │   └── OrderForm.jsx
+│   ├── services/
+│   │   ├── dxfService.js
+│   │   ├── nestingService.js
+│   │   └── apiService.js
+│   ├── views/
+│   │   ├── Home.jsx
+│   │   ├── Designer.jsx
+│   │   └── Order.jsx
+│   ├── App.jsx
+│   └── index.js
+├── .env
+├── package.json
+├── README.md
+└── /build (for XAMPP deployment)
+```
+
+---
+
+## 🧰 Core Libraries & APIs
+
+| Feature            | Library           | Notes                              |
+|--------------------|-------------------|-------------------------------------|
+| DXF Export         | dxf-writer        | JS-based DXF generation             |
+| Nesting            | SVGNest / rectpack2D | Sheet layout optimization        |
+| Geometry           | clipper-lib       | Offsets, joinery, polygon ops       |
+| CSV Export         | PapaParse         | Cut list generation                 |
+| PDF Export         | jsPDF             | Printable cut sheets                |
+| ZIP Packaging      | JSZip             | Bundle DXF + metadata               |
+| Form Handling      | React Hook Form   | Clean form logic                    |
+| State Management   | Redux or Zustand  | Modular state control               |
+| Routing            | React Router      | Page navigation                     |
+| 3D Preview (optional) | Three.js        | Future expansion                    |
+
+---
+
+## 🧩 Feature Map
+
+### 🖥️ UI Components
+- Cabinet type selector
+- Parametric input fields (width, height, depth, material thickness)
+- Joinery options (dado, rabbet, finger joint)
+- Shelf & divider controls
+- Face frame and drawer box generators
+
+### 📐 Layout & Nesting
+- 2D sheet layout panel (SVG or Canvas)
+- Interactive cabinet schematic
+- Grain direction indicators
+- Color-coded layers (cut, pocket, drill)
+
+### 📤 Export Logic
+- DXF generation with labeled parts
+- CSV/PDF cut list export
+- ZIP bundling
+- Optional: fulfillment request form
+
+---
+
+## 🎯 Suggested Enhancements
+
+### 💾 Project Management Features
+- **Save/Load designs** - LocalStorage or cloud-based project saving
+- **Design library** - Save common cabinet configurations as templates
+- **Revision history** - Undo/redo functionality for design changes
+
+### 🗄️ Material & Hardware Database
+- **Material presets** - Common sheet sizes (4x8, 5x8) and thicknesses (1/4", 1/2", 3/4")
+- **Hardware calculator** - Auto-calculate hinges, drawer slides, shelf pins needed
+- **Material cost estimator** - Price calculations based on material type and waste
+
+### ✅ Validation & Error Handling
+- **Real-time validation** - Warn if dimensions are impractical (too thin, too wide, etc.)
+- **Joinery compatibility checks** - Prevent impossible joinery for given material thickness
+- **Nesting failure handling** - Alert if parts won't fit on available sheet sizes
+
+### 📦 Enhanced Exports
+- **G-code generation** (optional) - For direct CNC machine control
+- **Assembly instructions** - Step-by-step build guide with diagrams
+- **Edge banding calculator** - Linear feet of banding needed per edge type
+
+### 🎨 UX Improvements
+- **Units toggle** - Switch between imperial/metric
+- **Dark/light mode** - Easier on eyes during long design sessions
+- **Keyboard shortcuts** - Speed up repetitive tasks
+- **Mobile-responsive design** - At least for viewing/reviewing designs
+
+### 🛠️ Quality of Life Features
+- **Batch processing** - Design multiple cabinets for a full kitchen
+- **Mirror/duplicate function** - Quick left/right cabinet pairs
+- **Part labeling system** - Automatic naming convention (e.g., "LWC-01-Left", "LWC-01-Right")
+
+---
+
+## 🛠️ Local Deployment with XAMPP
+
+1. Build React app:
+   ```bash
+   npm run build
+   ```
+2. Copy `/build` contents to:
+   ```
+   C:\xampp\htdocs\cabinet-designer
+   ```
+3. Access via:
+   ```
+   http://localhost/cabinet-designer
+   ```
+
+Optional `.htaccess` for React Router:
+```apache
+RewriteEngine On
+RewriteBase /cabinet-designer/
+RewriteRule ^index\.html$ - [L]
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteRule . /cabinet-designer/index.html [L]
+```
+
+---
+
+## 🧪 Testing & Debugging
+
+- Use browser dev tools for layout inspection
+- Check XAMPP logs: `xampp/apache/logs/error.log`
+- Enable PHP error reporting in `php.ini`:
+  ```
+  display_errors = On
+  error_reporting = E_ALL
+  ```
+
+---
+
+## 🤖 Claude 4.0 + Copilot Usage Tips
+
+- Use Claude to:
+  - Scaffold React components from feature specs
+  - Generate DXF logic using dxf-writer
+  - Implement nesting algorithms with SVGNest
+  - Chunk UI logic into reusable modules
+  - Draft backend PHP scripts for order submission
+
+- Use Copilot to:
+  - Autocomplete geometry and layout logic
+  - Suggest React hooks and form validation
+  - Refactor and comment code for clarity
+  - Generate export handlers (CSV, PDF, ZIP)
+
+---
+
+## � Development Phases
+
+### **Phase 1: Foundation & Basic UI** ⭐ *Start Here*
+**Goal:** Get the app structure running with basic input capabilities
+
+- [ ] Initialize React app and install core dependencies
+- [ ] Set up project structure (components/, services/, views/)
+- [ ] Create basic routing (Home, Designer, Order views)
+- [ ] Build CabinetForm component with basic inputs
+  - [ ] Cabinet type selector
+  - [ ] Width, height, depth inputs
+  - [ ] Material thickness input
+- [ ] Implement basic state management (Redux/Zustand)
+- [ ] Add form validation with React Hook Form
+- [ ] Style with basic CSS (responsiveness comes later)
+
+**Deliverable:** Working form that captures cabinet specifications
+
+---
+
+### **Phase 2: Calculation Engine**
+**Goal:** Generate accurate part dimensions with joinery logic
+
+- [ ] Create calculation service module
+- [ ] Implement basic box geometry calculations
+  - [ ] Top, bottom, sides dimensions
+  - [ ] Back panel calculations
+- [ ] Add joinery offset logic
+  - [ ] Dado joint calculations
+  - [ ] Rabbet joint calculations
+  - [ ] Finger/box joint calculations
+- [ ] Implement shelf calculations
+  - [ ] Fixed shelf positioning
+  - [ ] Adjustable shelf dados
+- [ ] Add divider logic (vertical partitions)
+- [ ] Integrate clipper-lib for geometry operations
+- [ ] Create part list data structure
+
+**Deliverable:** Accurate part dimensions based on inputs and joinery type
+
+---
+
+### **Phase 3: Visualization**
+**Goal:** Show users what they're designing
+
+- [ ] Build PartPreview component (simple 2D schematic)
+- [ ] Create interactive cabinet diagram
+  - [ ] Show assembled view
+  - [ ] Label major components
+- [ ] Implement grain direction indicators
+- [ ] Add basic SVG/Canvas rendering
+- [ ] Create color-coding system for part types
+- [ ] Show real-time updates as form changes
+
+**Deliverable:** Visual representation of cabinet design
+
+---
+
+### **Phase 4: Nesting & Layout**
+**Goal:** Optimize part arrangement on sheet materials
+
+- [ ] Integrate SVGNest or rectpack2D
+- [ ] Create SheetLayout component
+- [ ] Implement material sheet size configuration
+- [ ] Build nesting algorithm integration
+- [ ] Add grain direction respect in nesting
+- [ ] Calculate material waste/efficiency
+- [ ] Show multiple sheet layouts if needed
+- [ ] Add manual adjustment capability (drag parts)
+
+**Deliverable:** Optimized sheet layout with minimal waste
+
+---
+
+### **Phase 5: Export Functionality**
+**Goal:** Generate production-ready files
+
+- [ ] Integrate dxf-writer library
+- [ ] Build DXF export service
+  - [ ] Generate layers (cut, pocket, drill)
+  - [ ] Add part labels to DXF
+  - [ ] Include dimension annotations
+- [ ] Create CSV cut list export (PapaParse)
+  - [ ] Part name, dimensions, quantity
+  - [ ] Material type, grain direction
+- [ ] Implement PDF generation (jsPDF)
+  - [ ] Cut list printout
+  - [ ] Assembly diagram
+- [ ] Add ZIP bundling (JSZip)
+  - [ ] Package all exports together
+  - [ ] Include metadata file
+- [ ] Build download UI components
+
+**Deliverable:** Complete export system with DXF, CSV, PDF, and ZIP
+
+---
+
+### **Phase 6: Enhanced Features** (Optional/Priority 2)
+**Goal:** Add convenience and professional features
+
+- [ ] **Project Management**
+  - [ ] Save/load designs (LocalStorage)
+  - [ ] Design templates library
+  - [ ] Undo/redo functionality
+- [ ] **Material Database**
+  - [ ] Material presets
+  - [ ] Hardware calculator
+  - [ ] Cost estimator
+- [ ] **Advanced Validation**
+  - [ ] Real-time dimension warnings
+  - [ ] Joinery compatibility checks
+  - [ ] Nesting failure alerts
+- [ ] **UX Polish**
+  - [ ] Imperial/metric toggle
+  - [ ] Dark/light mode
+  - [ ] Keyboard shortcuts
+  - [ ] Mobile responsiveness
+
+**Deliverable:** Production-ready professional tool
+
+---
+
+### **Phase 7: Advanced Capabilities** (Future)
+**Goal:** Differentiate and expand market
+
+- [ ] Face frame generator
+- [ ] Drawer box module
+- [ ] 3D preview (Three.js)
+- [ ] G-code generation
+- [ ] Assembly instructions generator
+- [ ] Edge banding calculator
+- [ ] Batch/kitchen-wide processing
+- [ ] Cloud storage integration
+- [ ] User accounts and project sharing
+- [ ] White-label customization
+
+**Deliverable:** Feature-complete enterprise solution
+
+---
+
+## 📎 Quick Start Checklist
+
+**Before Starting Phase 1:**
+- [ ] Node.js and npm installed
+- [ ] VSCode with GitHub Copilot enabled
+- [ ] Claude 4.0 available via Copilot Chat
+- [ ] Git repository initialized
+- [ ] XAMPP installed (for later deployment)
+
+---
+
+## 🚀 Future Expansion
+
+- Add 3D preview with Three.js
+- Integrate Firebase for cloud storage and user accounts
+- Wrap app in Electron or Tauri for desktop deployment
+- Offer white-label version for cabinet shops

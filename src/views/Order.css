@@ -1,0 +1,27 @@
+.order-container {
+  flex: 1;
+  padding: 2rem;
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+.order-header {
+  text-align: center;
+  margin-bottom: 2rem;
+}
+
+.order-header h1 {
+  color: #2c3e50;
+  margin-bottom: 0.5rem;
+}
+
+.order-header p {
+  color: #7f8c8d;
+}
+
+.placeholder-text {
+  text-align: center;
+  color: #95a5a6;
+  font-style: italic;
+  padding: 3rem;
+}
