@@ -26,9 +26,8 @@ const useCabinetStore = create((set) => ({
     railHeight: 4,  // Height of mounting rails when type is 'rails'
   },
   
-  // Shelves and dividers
+  // Shelves
   shelves: [],
-  dividers: [],
   
   // Calculated parts
   parts: [],
@@ -39,7 +38,6 @@ const useCabinetStore = create((set) => ({
   partSpacing: 0.125, // Spacing between parts (kerf allowance)
   bitDiameter: 0.25, // CNC bit diameter (default 1/4")
   edgePadding: 0.125,   // Padding from sheet edge (default 0.125")
-  sheets: [],
   
   // Actions
   setCabinetType: (type) => set({ cabinetType: type }),
@@ -54,23 +52,19 @@ const useCabinetStore = create((set) => ({
   setToeKick: (toeKick) => set({ toeKick }),
   setBackPanel: (backPanel) => set({ backPanel }),
   addShelf: (position) => set((state) => ({ 
-    shelves: [...state.shelves, { position, type: 'fixed' }] 
+    shelves: [...state.shelves, { position, type: 'fixed', quantity: 1 }] 
+  })),
+  updateShelf: (index, updates) => set((state) => ({
+    shelves: state.shelves.map((shelf, i) => i === index ? { ...shelf, ...updates } : shelf)
   })),
   removeShelf: (index) => set((state) => ({ 
     shelves: state.shelves.filter((_, i) => i !== index) 
-  })),
-  addDivider: (position) => set((state) => ({ 
-    dividers: [...state.dividers, { position }] 
-  })),
-  removeDivider: (index) => set((state) => ({ 
-    dividers: state.dividers.filter((_, i) => i !== index) 
   })),
   setParts: (parts) => set({ parts }),
   setSheetSize: (width, height) => set({ sheetWidth: width, sheetHeight: height }),
   setPartSpacing: (spacing) => set({ partSpacing: spacing }),
   setBitDiameter: (diameter) => set({ bitDiameter: diameter }),
   setEdgePadding: (padding) => set({ edgePadding: padding }),
-  setSheets: (sheets) => set({ sheets }),
   
   // Reset all
   reset: () => set({
@@ -94,14 +88,12 @@ const useCabinetStore = create((set) => ({
       railHeight: 4,
     },
     shelves: [],
-    dividers: [],
     parts: [],
     sheetWidth: 48,
     sheetHeight: 96,
     partSpacing: 0.125,
     bitDiameter: 0.25,
-    edgePadding: 0.125,
-    sheets: []
+    edgePadding: 0.125
   })
 }));
 

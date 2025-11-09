@@ -40,11 +40,6 @@ class CabinetCalculator {
       parts.push(...this.calculateShelves());
     }
 
-    // Dividers
-    if (this.dividers.length > 0) {
-      parts.push(...this.calculateDividers());
-    }
-
     // Back panel (based on type)
     if (this.backPanel.enabled) {
       if (this.backPanel.type === 'full') {
@@ -93,7 +88,7 @@ class CabinetCalculator {
   getJoineryOffset() {
     switch (this.joinery) {
       case 'dado':
-        return this.actualThickness + this.tolerance; // Dado width = actual thickness + tolerance for fit
+        return this.actualThickness + this.tolerance; // Dado width = actual thickness + small tolerance for fit
       case 'rabbet':
         return this.actualThickness / 2; // Half-lap rabbet
       case 'finger':
@@ -103,6 +98,13 @@ class CabinetCalculator {
       default:
         return 0;
     }
+  }
+
+  /**
+   * Get dado width (should match panel thickness for a snug fit)
+   */
+  getDadoWidth() {
+    return this.actualThickness + this.tolerance; // Width of the groove
   }
 
   /**
@@ -117,7 +119,78 @@ class CabinetCalculator {
       ? this.height - this.toeKick.height 
       : this.height;
 
+    // Check if we have any adjustable shelves
+    const hasAdjustableShelves = this.shelves.some(shelf => shelf.type === 'adjustable');
+    const shelfPinHoles = hasAdjustableShelves ? this.calculateShelfPinHoles() : [];
+
     // Sides (full height or adjusted for toe kick, dado grooves will be cut for top/bottom)
+    const leftSideCuts = [
+      {
+        type: 'dado',
+        location: 'top edge',
+        distanceFromEdge: 0,  // Dado starts at the very top edge
+        width: offset,
+        depth: this.dadoDepth,
+        length: this.depth,
+        notes: `Receives top panel. POCKET toolpath ${this.dadoDepth.toFixed(3)}" deep (${((this.dadoDepth/this.actualThickness)*100).toFixed(0)}% thickness). Use ${this.getRecommendedBitSize(offset)} straight bit.`
+      }
+    ];
+
+    // Only add bottom dado if toe kick is enabled (otherwise no bottom panel)
+    if (this.type !== 'base' || this.toeKick.enabled) {
+      leftSideCuts.push({
+        type: 'dado',
+        location: 'bottom edge',
+        distanceFromEdge: 0,  // Dado starts at the very bottom edge
+        width: offset,
+        depth: this.dadoDepth,
+        length: this.depth,
+        notes: `Receives bottom panel. POCKET toolpath ${this.dadoDepth.toFixed(3)}" deep. Use ${this.getRecommendedBitSize(offset)} straight bit.`
+      });
+    }
+
+    // Add dados for fixed shelves
+    this.shelves.forEach((shelf, index) => {
+      if (shelf.type === 'fixed') {
+        leftSideCuts.push({
+          type: 'dado',
+          location: 'face',  // Dado runs horizontally across the face
+          distanceFromEdge: shelf.position,  // Distance from bottom edge
+          width: offset,  // Same width as top/bottom dados
+          depth: this.dadoDepth,
+          length: this.depth,
+          notes: `Receives Shelf ${index + 1} at ${shelf.position}" from bottom. POCKET toolpath ${this.dadoDepth.toFixed(3)}" deep. Use ${this.getRecommendedBitSize(offset)} straight bit.`
+        });
+      }
+    });
+
+    // Add shelf pin holes if there are adjustable shelves
+    if (shelfPinHoles.length > 0) {
+      shelfPinHoles.forEach((hole, index) => {
+        leftSideCuts.push({
+          type: 'drill',
+          location: 'face',
+          x: hole.frontRow,
+          y: hole.fromBottom,
+          diameter: hole.diameter,
+          depth: hole.depth,
+          notes: `${hole.fromBottom.toFixed(3)}" from bottom, ${hole.frontRow}" from front edge`
+        });
+        leftSideCuts.push({
+          type: 'drill',
+          location: 'face',
+          x: hole.backRow,
+          y: hole.fromBottom,
+          diameter: hole.diameter,
+          depth: hole.depth,
+          notes: `${hole.fromBottom.toFixed(3)}" from bottom, ${hole.backRow}" from back edge`
+        });
+      });
+    }
+
+    const fixedShelvesCount = this.shelves.filter(s => s.type === 'fixed').length;
+    const hasBottomPanel = this.type !== 'base' || this.toeKick.enabled;
+
     parts.push({
       name: 'Side - Left',
       width: this.depth,
@@ -125,28 +198,12 @@ class CabinetCalculator {
       thickness: this.actualThickness,
       quantity: 1,
       grainDirection: 'vertical',
-      notes: `Dado grooves at ${this.actualThickness}" from top and bottom, ${offset}" wide (${this.actualThickness}" + ${this.tolerance}" tolerance)${this.toeKick.enabled ? ', sits on toe kick' : ''}`,
-      cuts: [
-        {
-          type: 'dado',
-          location: 'top edge',
-          distanceFromEdge: this.actualThickness,
-          width: offset,
-          depth: this.dadoDepth,
-          length: this.depth,
-          notes: `Receives top panel. POCKET toolpath ${this.dadoDepth.toFixed(3)}" deep (${((this.dadoDepth/this.actualThickness)*100).toFixed(0)}% thickness). Use ${this.getRecommendedBitSize(offset)} straight bit.`
-        },
-        {
-          type: 'dado',
-          location: 'bottom edge',
-          distanceFromEdge: this.actualThickness,
-          width: offset,
-          depth: this.dadoDepth,
-          length: this.depth,
-          notes: `Receives bottom panel. POCKET toolpath ${this.dadoDepth.toFixed(3)}" deep. Use ${this.getRecommendedBitSize(offset)} straight bit.`
-        }
-      ]
+      notes: `Dado groove at top edge${hasBottomPanel ? ' and bottom edge' : ''}${fixedShelvesCount > 0 ? ` and ${fixedShelvesCount} shelf dado(s)` : ''}, ${offset}" wide, ${this.dadoDepth.toFixed(3)}" deep${this.toeKick.enabled ? ', sits on toe kick' : ''}${shelfPinHoles.length > 0 ? `. ${shelfPinHoles.length * 2} shelf pin holes (1.25" spacing, 0.197" diameter)` : ''}`,
+      cuts: leftSideCuts
     });
+
+    // Right side with same cuts
+    const rightSideCuts = [...leftSideCuts];
 
     parts.push({
       name: 'Side - Right',
@@ -155,27 +212,8 @@ class CabinetCalculator {
       thickness: this.actualThickness,
       quantity: 1,
       grainDirection: 'vertical',
-      notes: `Dado grooves at ${this.actualThickness}" from top and bottom, ${offset}" wide (${this.actualThickness}" + ${this.tolerance}" tolerance)${this.toeKick.enabled ? ', sits on toe kick' : ''}`,
-      cuts: [
-        {
-          type: 'dado',
-          location: 'top edge',
-          distanceFromEdge: this.actualThickness,
-          width: offset,
-          depth: this.dadoDepth,
-          length: this.depth,
-          notes: `Receives top panel. POCKET toolpath ${this.dadoDepth.toFixed(3)}" deep (${((this.dadoDepth/this.actualThickness)*100).toFixed(0)}% thickness). Use ${this.getRecommendedBitSize(offset)} straight bit.`
-        },
-        {
-          type: 'dado',
-          location: 'bottom edge',
-          distanceFromEdge: this.actualThickness,
-          width: offset,
-          depth: this.dadoDepth,
-          length: this.depth,
-          notes: `Receives bottom panel. POCKET toolpath ${this.dadoDepth.toFixed(3)}" deep. Use ${this.getRecommendedBitSize(offset)} straight bit.`
-        }
-      ]
+      notes: `Dado groove at top edge${hasBottomPanel ? ' and bottom edge' : ''}${fixedShelvesCount > 0 ? `, ${fixedShelvesCount} shelf dado(s)` : ''}, ${offset}" wide (${this.actualThickness}" + ${this.tolerance}" tolerance), ${this.dadoDepth.toFixed(3)}" deep${this.toeKick.enabled ? ', sits on toe kick' : ''}${shelfPinHoles.length > 0 ? `. ${shelfPinHoles.length * 2} shelf pin holes (1.25" spacing, 0.197" diameter)` : ''}`,
+      cuts: rightSideCuts
     });
 
     // Top and bottom (reduced width to fit in dados)
@@ -191,15 +229,33 @@ class CabinetCalculator {
       notes: 'Fits into dado grooves in sides'
     });
 
-    parts.push({
-      name: 'Bottom',
-      width: topBottomWidth,
-      height: this.depth,
-      thickness: this.actualThickness,
-      quantity: 1,
-      grainDirection: 'horizontal',
-      notes: 'Fits into dado grooves in sides'
-    });
+    // Only add bottom panel if toe kick is enabled or not a base cabinet
+    if (hasBottomPanel) {
+      parts.push({
+        name: 'Bottom',
+        width: topBottomWidth,
+        height: this.depth,
+        thickness: this.actualThickness,
+        quantity: 1,
+        grainDirection: 'horizontal',
+        notes: 'Fits into dado grooves in sides'
+      });
+    }
+
+    // Add corner gussets if base cabinet without toe kick
+    if (this.type === 'base' && !this.toeKick.enabled) {
+      // Triangular corner gussets for structural support
+      const gussetSize = 6; // 6 inch triangular gussets
+      parts.push({
+        name: 'Corner Gusset',
+        width: gussetSize,
+        height: gussetSize,
+        thickness: this.actualThickness,
+        quantity: 4,
+        grainDirection: 'horizontal',
+        notes: 'Triangular corner supports for no-toe-kick base cabinets. Cut diagonally from 6"x6" square.'
+      });
+    }
 
     return parts;
   }
@@ -427,6 +483,10 @@ class CabinetCalculator {
   /**
    * Calculate shelf parts
    */
+  /**
+   * Calculate shelf parts
+   * Shelves are full width, not divided by vertical dividers
+   */
   calculateShelves() {
     const shelves = [];
     const shelfWidth = this.width - (2 * this.thickness);
@@ -437,35 +497,15 @@ class CabinetCalculator {
         width: shelfWidth,
         height: this.depth - this.thickness, // Account for back panel
         thickness: this.actualThickness,
-        quantity: 1,
+        quantity: shelf.quantity || 1,
         grainDirection: 'horizontal',
-        notes: `Position: ${shelf.position}" from bottom, Type: ${shelf.type}`
+        position: shelf.position, // Store position for divider calculations
+        shelfType: shelf.type || 'fixed',
+        notes: `Full-width shelf at ${shelf.position}" from bottom. Type: ${shelf.type || 'fixed'}`
       });
     });
 
     return shelves;
-  }
-
-  /**
-   * Calculate divider parts
-   */
-  calculateDividers() {
-    const dividers = [];
-    const dividerHeight = this.height - (2 * this.thickness);
-
-    this.dividers.forEach((divider, index) => {
-      dividers.push({
-        name: `Divider ${index + 1}`,
-        width: this.depth - this.thickness,
-        height: dividerHeight,
-        thickness: this.actualThickness,
-        quantity: 1,
-        grainDirection: 'vertical',
-        notes: `Position: ${divider.position}" from left`
-      });
-    });
-
-    return dividers;
   }
 
   /**
@@ -566,6 +606,42 @@ class CabinetCalculator {
     }
     return '1/8" or smaller';
   }
+
+  /**
+   * Calculate shelf pin holes for adjustable shelving
+   * Standard 1.25" spacing, 0.197" (5mm) diameter holes
+   * Returns array of hole positions from bottom
+   */
+  calculateShelfPinHoles() {
+    const holes = [];
+    const holeDiameter = 0.197; // 5mm converted to inches
+    const spacing = 1.25; // Standard shelf pin spacing
+    const startFromBottom = 6; // Start 6" from bottom
+    const endFromTop = 6; // Stop 6" from top
+    const insetFromEdge = 1.5; // 1.5" from front and back edges
+    
+    const sideHeight = (this.type === 'base' && this.toeKick.enabled) 
+      ? this.height - this.toeKick.height 
+      : this.height;
+    
+    const maxHeight = sideHeight - endFromTop;
+    
+    // Calculate hole positions
+    let currentHeight = startFromBottom;
+    while (currentHeight <= maxHeight) {
+      holes.push({
+        fromBottom: currentHeight,
+        diameter: holeDiameter,
+        depth: 0.5, // 1/2" deep (industry standard)
+        frontRow: insetFromEdge, // Distance from front edge
+        backRow: this.depth - insetFromEdge // Distance from front edge (back row)
+      });
+      currentHeight += spacing;
+    }
+    
+    return holes;
+  }
+
 
   /**
    * Get summary statistics

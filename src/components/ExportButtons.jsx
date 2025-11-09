@@ -14,8 +14,7 @@ function ExportButtons() {
     depth, 
     materialThickness, 
     joineryType,
-    parts,
-    sheets
+    parts
   } = useCabinetStore();
 
   const [isExporting, setIsExporting] = useState(false);
@@ -30,13 +29,13 @@ function ExportButtons() {
   };
 
   const handleExportDXF = () => {
-    if (sheets.length === 0) {
+    if (parts.length === 0) {
       alert('Please generate a design first by clicking "Update Design"');
       return;
     }
 
     const dxfService = new DxfService();
-    const dxfFiles = dxfService.exportSheets(sheets, cabinetInfo);
+    const dxfFiles = dxfService.exportParts(parts, cabinetInfo);
 
     dxfFiles.forEach(file => {
       DxfService.downloadDXF(file.filename, file.content);
@@ -52,12 +51,6 @@ function ExportButtons() {
     // Export cut list
     const cutListCSV = CsvService.exportCutList(parts, cabinetInfo);
     CsvService.downloadCSV('Cut_List.csv', cutListCSV);
-
-    // Export sheet layout
-    if (sheets.length > 0) {
-      const sheetLayoutCSV = CsvService.exportSheetLayout(sheets);
-      CsvService.downloadCSV('Sheet_Layout.csv', sheetLayoutCSV);
-    }
   };
 
   const handleExportPDF = () => {
@@ -69,16 +62,10 @@ function ExportButtons() {
     // Export cut list PDF
     const cutListPDF = PdfService.exportCutListPDF(parts, cabinetInfo);
     PdfService.downloadPDF(cutListPDF, 'Cut_List.pdf');
-
-    // Export sheet layout PDF
-    if (sheets.length > 0) {
-      const sheetLayoutPDF = PdfService.exportSheetLayoutPDF(sheets, cabinetInfo);
-      PdfService.downloadPDF(sheetLayoutPDF, 'Sheet_Layout.pdf');
-    }
   };
 
   const handleExportAll = async () => {
-    if (parts.length === 0 || sheets.length === 0) {
+    if (parts.length === 0) {
       alert('Please generate a design first by clicking "Update Design"');
       return;
     }
@@ -88,7 +75,6 @@ function ExportButtons() {
     try {
       const zipBlob = await ZipService.createBundle({
         parts,
-        sheets,
         cabinetInfo
       });
 

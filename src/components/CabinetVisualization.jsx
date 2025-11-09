@@ -11,8 +11,7 @@ function CabinetVisualization() {
     materialThickness,
     toeKick,
     backPanel,
-    shelves,
-    dividers
+    shelves
   } = useCabinetStore();
 
   // SVG scaling (convert inches to pixels)
@@ -162,28 +161,32 @@ function CabinetVisualization() {
             TOP
           </text>
 
-          {/* Bottom */}
-          <rect
-            x={offsetX + thick}
-            y={offsetY + actualCabHeight - thick}
-            width={cabWidth - (2 * thick)}
-            height={thick}
-            fill="url(#grain-horizontal)"
-            stroke="#2c3e50"
-            strokeWidth="2"
-            className="part-bottom"
-          />
-          <text
-            x={offsetX + cabWidth / 2}
-            y={offsetY + actualCabHeight - thick / 2}
-            textAnchor="middle"
-            dominantBaseline="middle"
-            fontSize="10"
-            fill="#2c3e50"
-            fontWeight="bold"
-          >
-            BOTTOM
-          </text>
+          {/* Bottom - only shown if not a base cabinet without toe kick */}
+          {(cabinetType !== 'base' || toeKick.enabled) && (
+            <>
+              <rect
+                x={offsetX + thick}
+                y={offsetY + actualCabHeight - thick}
+                width={cabWidth - (2 * thick)}
+                height={thick}
+                fill="url(#grain-horizontal)"
+                stroke="#2c3e50"
+                strokeWidth="2"
+                className="part-bottom"
+              />
+              <text
+                x={offsetX + cabWidth / 2}
+                y={offsetY + actualCabHeight - thick / 2}
+                textAnchor="middle"
+                dominantBaseline="middle"
+                fontSize="10"
+                fill="#2c3e50"
+                fontWeight="bold"
+              >
+                BOTTOM
+              </text>
+            </>
+          )}
 
           {/* Shelves */}
           {shelves.map((shelf, index) => {
@@ -211,38 +214,6 @@ function CabinetVisualization() {
                   fontWeight="bold"
                 >
                   SHELF {index + 1}
-                </text>
-              </g>
-            );
-          })}
-
-          {/* Dividers */}
-          {dividers.map((divider, index) => {
-            const divX = offsetX + thick + (divider.position * scale);
-            return (
-              <g key={index}>
-                <rect
-                  x={divX}
-                  y={offsetY + thick}
-                  width={thick}
-                  height={actualCabHeight - (2 * thick)}
-                  fill="url(#grain-vertical)"
-                  stroke="#e67e22"
-                  strokeWidth="2"
-                  className="part-divider"
-                  opacity="0.8"
-                />
-                <text
-                  x={divX + thick / 2}
-                  y={offsetY + actualCabHeight / 2}
-                  textAnchor="middle"
-                  dominantBaseline="middle"
-                  fontSize="9"
-                  fill="#e67e22"
-                  fontWeight="bold"
-                  transform={`rotate(-90, ${divX + thick / 2}, ${offsetY + actualCabHeight / 2})`}
-                >
-                  DIV {index + 1}
                 </text>
               </g>
             );
@@ -353,10 +324,6 @@ function CabinetVisualization() {
         <div className="legend-item">
           <span className="legend-color" style={{background: '#3498db'}}></span>
           <span>Shelves</span>
-        </div>
-        <div className="legend-item">
-          <span className="legend-color" style={{background: '#e67e22'}}></span>
-          <span>Dividers</span>
         </div>
         {backPanel.enabled && backPanel.type === 'full' && (
           <div className="legend-item">

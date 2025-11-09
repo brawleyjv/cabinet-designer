@@ -1,13 +1,10 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import useCabinetStore from '../store/cabinetStore';
 import CabinetCalculator from '../services/calculationService';
-import NestingService from '../services/nestingService';
 import './CabinetForm.css';
 
 function CabinetForm() {
-  const [nestingErrors, setNestingErrors] = useState([]);
-  
   const { 
     cabinetType, 
     width, 
@@ -20,12 +17,6 @@ function CabinetForm() {
     toeKick,
     backPanel,
     shelves,
-    dividers,
-    sheetWidth,
-    sheetHeight,
-    partSpacing,
-    bitDiameter,
-    edgePadding,
     setCabinetType,
     setDimensions,
     setMaterialThickness,
@@ -33,16 +24,10 @@ function CabinetForm() {
     setJoineryTolerance,
     setToeKick,
     setBackPanel,
-    setSheetSize,
-    setPartSpacing,
-    setBitDiameter,
-    setEdgePadding,
     addShelf,
+    updateShelf,
     removeShelf,
-    addDivider,
-    removeDivider,
-    setParts,
-    setSheets
+    setParts
   } = useCabinetStore();
 
   const { register, handleSubmit, watch, setValue, formState: { errors } } = useForm({
@@ -59,20 +44,118 @@ function CabinetForm() {
       toeKickHeight: toeKick.height,
       toeKickDepth: toeKick.depth,
       backPanelType: backPanel.type,
-      backRailHeight: backPanel.railHeight,
-      sheetWidth,
-      sheetHeight,
-      partSpacing,
-      bitDiameter,
-      edgePadding
+      backRailHeight: backPanel.railHeight
     }
   });
 
   const watchCabinetType = watch('cabinetType');
   const watchToeKickEnabled = watch('toeKickEnabled');
   const watchBackPanelType = watch('backPanelType');
-  const watchSheetWidth = watch('sheetWidth');
-  const watchSheetHeight = watch('sheetHeight');
+  const watchWidth = watch('width');
+  const watchHeight = watch('height');
+  const watchDepth = watch('depth');
+  const watchMaterialThickness = watch('materialThickness');
+  const watchActualMaterialThickness = watch('actualMaterialThickness');
+  const watchJoineryType = watch('joineryType');
+  const watchJoineryTolerance = watch('joineryTolerance');
+  const watchToeKickHeight = watch('toeKickHeight');
+  const watchToeKickDepth = watch('toeKickDepth');
+  const watchBackRailHeight = watch('backRailHeight');
+
+  // Update store's toeKick state when form values change
+  useEffect(() => {
+    setToeKick({
+      enabled: watchToeKickEnabled,
+      height: parseFloat(watchToeKickHeight) || toeKick.height,
+      depth: parseFloat(watchToeKickDepth) || toeKick.depth
+    });
+  }, [watchToeKickEnabled, watchToeKickHeight, watchToeKickDepth, setToeKick, toeKick.height, toeKick.depth]);
+
+  // Recalculate parts when shelves change or form values change
+  useEffect(() => {
+    // Auto-position shelves proportionally
+    if (shelves.length > 0) {
+      // Calculate actual side height (accounting for toe kick)
+      const actualSideHeight = (watchCabinetType === 'base' && watchToeKickEnabled) 
+        ? parseFloat(watchHeight) - parseFloat(watchToeKickHeight)
+        : parseFloat(watchHeight);
+      
+      const updatedShelves = shelves.map((shelf, index) => {
+        let position;
+        if (shelves.length === 1) {
+          // Single shelf at center of the cabinet interior
+          position = actualSideHeight / 2;
+        } else {
+          // Multiple shelves evenly spaced in the cabinet interior
+          const segments = shelves.length + 1;
+          position = (actualSideHeight / segments) * (index + 1);
+        }
+        return { ...shelf, position };
+      });
+      
+      // Only update if positions changed
+      const positionsChanged = shelves.some((shelf, index) => 
+        Math.abs(shelf.position - updatedShelves[index].position) > 0.01
+      );
+      
+      if (positionsChanged) {
+        updatedShelves.forEach((shelf, index) => {
+          updateShelf(index, { position: shelf.position });
+        });
+        return; // Exit early to avoid recalculating twice
+      }
+    }
+
+    const calculator = new CabinetCalculator({
+      cabinetType: watchCabinetType,
+      width: parseFloat(watchWidth) || width,
+      height: parseFloat(watchHeight) || height,
+      depth: parseFloat(watchDepth) || depth,
+      materialThickness: parseFloat(watchMaterialThickness) || materialThickness,
+      actualMaterialThickness: parseFloat(watchActualMaterialThickness) || actualMaterialThickness,
+      joineryType: watchJoineryType,
+      joineryTolerance: parseFloat(watchJoineryTolerance) || joineryTolerance,
+      toeKick: {
+        enabled: watchToeKickEnabled,
+        height: parseFloat(watchToeKickHeight) || toeKick.height,
+        depth: parseFloat(watchToeKickDepth) || toeKick.depth
+      },
+      backPanel: {
+        enabled: watchBackPanelType !== 'none',
+        type: watchBackPanelType,
+        railHeight: parseFloat(watchBackRailHeight) || backPanel.railHeight
+      },
+      shelves
+    });
+
+    const parts = calculator.calculateParts();
+    setParts(parts);
+  }, [
+    shelves, 
+    watchCabinetType, 
+    watchWidth, 
+    watchHeight, 
+    watchDepth, 
+    watchMaterialThickness, 
+    watchActualMaterialThickness, 
+    watchJoineryType, 
+    watchJoineryTolerance, 
+    watchToeKickEnabled,
+    watchToeKickHeight,
+    watchToeKickDepth,
+    watchBackPanelType,
+    watchBackRailHeight,
+    updateShelf,
+    setParts,
+    width,
+    height,
+    depth,
+    materialThickness,
+    actualMaterialThickness,
+    joineryType,
+    joineryTolerance,
+    toeKick
+  ]);
 
   const onSubmit = (data) => {
     // Update store
@@ -100,12 +183,6 @@ function CabinetForm() {
       railHeight: parseFloat(data.backRailHeight)
     });
 
-    // Update sheet settings
-    setSheetSize(parseFloat(data.sheetWidth), parseFloat(data.sheetHeight));
-    setPartSpacing(parseFloat(data.partSpacing));
-    setBitDiameter(parseFloat(data.bitDiameter));
-    setEdgePadding(parseFloat(data.edgePadding));
-
     // Calculate parts
     const calculator = new CabinetCalculator({
       cabinetType: data.cabinetType,
@@ -126,29 +203,11 @@ function CabinetForm() {
         type: data.backPanelType,
         railHeight: parseFloat(data.backRailHeight)
       },
-      shelves: shelves,
-      dividers: dividers
+      shelves: shelves
     });
 
     const parts = calculator.calculateParts();
     setParts(parts);
-
-    // Nest parts on sheets
-    const nesting = new NestingService(
-      parseFloat(data.sheetWidth), 
-      parseFloat(data.sheetHeight),
-      parseFloat(data.bitDiameter),
-      parseFloat(data.partSpacing),
-      parseFloat(data.edgePadding)
-    );
-    const result = nesting.nestParts(parts);
-    setSheets(result.sheets);
-    setNestingErrors(result.errors);
-    
-    // Show alert if there are nesting errors
-    if (result.errors.length > 0) {
-      alert(`Warning: ${result.errors.length} part(s) are too large for the selected sheet size. See errors below the form.`);
-    }
   };
 
   return (
@@ -401,15 +460,61 @@ function CabinetForm() {
         {shelves.length > 0 ? (
           <div className="items-list">
             {shelves.map((shelf, index) => (
-              <div key={index} className="item-row">
-                <span>Shelf {index + 1} - {shelf.position}" from bottom</span>
-                <button 
-                  type="button" 
-                  className="btn-remove"
-                  onClick={() => removeShelf(index)}
-                >
-                  Remove
-                </button>
+              <div key={index} className="shelf-item">
+                <div className="item-row">
+                  <span>Shelf {index + 1} - {shelf.position?.toFixed(2)}" from bottom</span>
+                  <button 
+                    type="button" 
+                    className="btn-remove"
+                    onClick={() => removeShelf(index)}
+                  >
+                    Remove
+                  </button>
+                </div>
+                <div className="shelf-controls">
+                  <div className="shelf-type-control">
+                    <label>Type:</label>
+                    <div className="radio-group">
+                      <label className="radio-label-inline">
+                        <input
+                          type="radio"
+                          name={`shelf-${index}-type`}
+                          value="fixed"
+                          checked={shelf.type === 'fixed'}
+                          onChange={() => updateShelf(index, { type: 'fixed' })}
+                        />
+                        <span>Fixed</span>
+                      </label>
+                      <label className="radio-label-inline">
+                        <input
+                          type="radio"
+                          name={`shelf-${index}-type`}
+                          value="adjustable"
+                          checked={shelf.type === 'adjustable'}
+                          onChange={() => updateShelf(index, { type: 'adjustable' })}
+                        />
+                        <span>Adjustable</span>
+                      </label>
+                    </div>
+                  </div>
+                  <div className="shelf-quantity-control">
+                    <label htmlFor={`shelf-${index}-quantity`}>Quantity:</label>
+                    <input
+                      id={`shelf-${index}-quantity`}
+                      type="number"
+                      min="1"
+                      max="10"
+                      value={shelf.quantity || 1}
+                      onChange={(e) => updateShelf(index, { quantity: parseInt(e.target.value) || 1 })}
+                      className="quantity-input"
+                    />
+                  </div>
+                </div>
+                <div className="shelf-info">
+                  <small className="helper-text">
+                    {shelf.position ? `${(height - shelf.position - actualMaterialThickness).toFixed(2)}" clearance above shelf` : ''}
+                  </small>
+                </div>
               </div>
             ))}
           </div>
@@ -417,196 +522,29 @@ function CabinetForm() {
           <p className="empty-list">No shelves added</p>
         )}
         
+        <div className="info-box">
+          <small>
+            <strong>Fixed shelves</strong> use dado grooves for permanent installation.
+            <br />
+            <strong>Adjustable shelves</strong> use pin holes (1.25" spacing, 0.197" diameter) for repositioning.
+            <br />
+            Shelves are automatically positioned proportionally (1 shelf = center, 2 shelves = thirds, etc.).
+          </small>
+        </div>
+        
         <button 
           type="button" 
           className="btn-add"
           onClick={() => {
-            const position = height / 2; // Default to middle
-            addShelf(position);
+            // Position will be auto-calculated by useEffect
+            addShelf(0);
           }}
         >
           + Add Shelf
         </button>
       </div>
 
-      {/* Dividers */}
-      <div className="form-section">
-        <h3>Dividers</h3>
-        
-        {dividers.length > 0 ? (
-          <div className="items-list">
-            {dividers.map((divider, index) => (
-              <div key={index} className="item-row">
-                <span>Divider {index + 1} - {divider.position}" from left</span>
-                <button 
-                  type="button" 
-                  className="btn-remove"
-                  onClick={() => removeDivider(index)}
-                >
-                  Remove
-                </button>
-              </div>
-            ))}
-          </div>
-        ) : (
-          <p className="empty-list">No dividers added</p>
-        )}
-        
-        <button 
-          type="button" 
-          className="btn-add"
-          onClick={() => {
-            const position = width / 2; // Default to middle
-            addDivider(position);
-          }}
-        >
-          + Add Divider
-        </button>
-      </div>
-
-      {/* Sheet Configuration */}
-      <div className="form-section">
-        <h3>Sheet Material & CNC Settings</h3>
-        
-        <div className="form-group">
-          <label htmlFor="sheetSize">Sheet Size</label>
-          <select 
-            id="sheetSize"
-            defaultValue="48x96"
-            onChange={(e) => {
-              const [w, h] = e.target.value.split('x').map(v => parseFloat(v));
-              if (!isNaN(w) && !isNaN(h)) {
-                setValue('sheetWidth', w);
-                setValue('sheetHeight', h);
-              }
-            }}
-          >
-            <option value="24x48">2' × 4' (24" × 48")</option>
-            <option value="48x48">4' × 4' (48" × 48")</option>
-            <option value="48x96">4' × 8' (48" × 96")</option>
-            <option value="48x120">4' × 10' (48" × 120")</option>
-            <option value="60x60">5' × 5' (60" × 60")</option>
-            <option value="60x96">5' × 8' (60" × 96")</option>
-            <option value="60x120">5' × 10' (60" × 120")</option>
-            <option value="custom">Custom Size</option>
-          </select>
-        </div>
-
-        <div className="form-row">
-          <div className="form-group">
-            <label htmlFor="sheetWidth">Sheet Width (inches)</label>
-            <input 
-              id="sheetWidth"
-              type="number" 
-              step="1"
-              value={watchSheetWidth}
-              {...register('sheetWidth', { 
-                required: 'Width is required',
-                min: { value: 12, message: 'Minimum 12"' },
-                max: { value: 144, message: 'Maximum 144"' }
-              })}
-            />
-            {errors.sheetWidth && <span className="error">{errors.sheetWidth.message}</span>}
-          </div>
-
-          <div className="form-group">
-            <label htmlFor="sheetHeight">Sheet Height (inches)</label>
-            <input 
-              id="sheetHeight"
-              type="number" 
-              step="1"
-              value={watchSheetHeight}
-              {...register('sheetHeight', { 
-                required: 'Height is required',
-                min: { value: 12, message: 'Minimum 12"' },
-                max: { value: 144, message: 'Maximum 144"' }
-              })}
-            />
-            {errors.sheetHeight && <span className="error">{errors.sheetHeight.message}</span>}
-          </div>
-        </div>
-
-        <div className="form-row">
-          <div className="form-group">
-            <label htmlFor="bitDiameter">CNC Bit Diameter (inches)</label>
-            <input 
-              id="bitDiameter"
-              type="number" 
-              step="0.0625"
-              {...register('bitDiameter', { 
-                required: 'Bit diameter is required',
-                min: { value: 0.0625, message: 'Minimum 1/16"' },
-                max: { value: 1, message: 'Maximum 1"' }
-              })}
-            />
-            <small className="help-text">
-              Diameter of your CNC router bit (1/8" = 0.125")
-            </small>
-            {errors.bitDiameter && <span className="error">{errors.bitDiameter.message}</span>}
-          </div>
-
-          <div className="form-group">
-            <label htmlFor="edgePadding">Edge Padding (inches)</label>
-            <input 
-              id="edgePadding"
-              type="number" 
-              step="0.0625"
-              {...register('edgePadding', { 
-                required: 'Edge padding is required',
-                min: { value: 0, message: 'Minimum 0"' },
-                max: { value: 3, message: 'Maximum 3"' }
-              })}
-            />
-            <small className="help-text">
-              Padding from sheet edge to parts (0.5" recommended)
-            </small>
-            {errors.edgePadding && <span className="error">{errors.edgePadding.message}</span>}
-          </div>
-        </div>
-
-        <div className="form-group">
-          <label htmlFor="partSpacing">Additional Part Spacing (inches)</label>
-          <input 
-            id="partSpacing"
-            type="number" 
-            step="0.0625"
-            {...register('partSpacing', { 
-              required: 'Spacing is required',
-              min: { value: 0, message: 'Minimum 0"' },
-              max: { value: 1, message: 'Maximum 1"' }
-            })}
-          />
-          <small className="help-text">
-            Extra padding between parts beyond bit diameter (0.25" recommended)
-          </small>
-          {errors.partSpacing && <span className="error">{errors.partSpacing.message}</span>}
-        </div>
-      </div>
-
       <button type="submit" className="btn-submit">Update Design</button>
-      
-      {/* Nesting Errors */}
-      {nestingErrors.length > 0 && (
-        <div className="nesting-errors">
-          <h3 className="error">⚠️ Nesting Errors</h3>
-          <p>The following parts are too large for the selected sheet size:</p>
-          <ul>
-            {nestingErrors.map((error, index) => (
-              <li key={index} className="error-item">
-                <strong>{error.part.name}</strong>: {error.part.width}" × {error.part.height}"
-                <br />
-                <small>{error.reason}</small>
-              </li>
-            ))}
-          </ul>
-          <p className="error-suggestion">
-            <strong>Suggestions:</strong>
-            <br />• Increase sheet size (try 5' × 8' or 5' × 10')
-            <br />• Reduce cabinet dimensions
-            <br />• Decrease edge padding or bit spacing
-          </p>
-        </div>
-      )}
     </form>
   );
 }

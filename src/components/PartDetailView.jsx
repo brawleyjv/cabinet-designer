@@ -4,11 +4,12 @@ import './PartDetailView.css';
 /**
  * CAD-style detailed view of a single part showing all cuts, dados, and joints
  */
-function PartDetailView({ part }) {
+function PartDetailView({ part, enlarged }) {
   if (!part) return null;
 
-  const scale = 4; // pixels per inch
-  const padding = 60; // padding for dimensions
+  // Use larger scale when in explorer mode
+  const scale = enlarged ? 6 : 4; // pixels per inch
+  const padding = enlarged ? 80 : 60; // padding for dimensions
   
   const partWidth = part.width * scale;
   const partHeight = part.height * scale;
@@ -29,22 +30,12 @@ function PartDetailView({ part }) {
       </div>
 
       <svg 
-        width={svgWidth} 
-        height={svgHeight}
         viewBox={`0 0 ${svgWidth} ${svgHeight}`}
         className="part-svg"
+        preserveAspectRatio="xMidYMid meet"
       >
-        {/* Grid background */}
-        <defs>
-          <pattern id={`grid-${part.name}`} width="20" height="20" patternUnits="userSpaceOnUse">
-            <path d="M 20 0 L 0 0 0 20" fill="none" stroke="#f0f0f0" strokeWidth="0.5"/>
-          </pattern>
-          <marker id="arrowhead-detail" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto">
-            <polygon points="0 0, 10 3, 0 6" fill="#666" />
-          </marker>
-        </defs>
-        
-        <rect width={svgWidth} height={svgHeight} fill={`url(#grid-${part.name})`} />
+        {/* Background */}
+        <rect width={svgWidth} height={svgHeight} fill="white" />
 
         {/* Main part outline */}
         <rect
@@ -53,27 +44,17 @@ function PartDetailView({ part }) {
           width={partWidth}
           height={partHeight}
           fill="#f9f9f9"
-          stroke="#2c3e50"
-          strokeWidth="2"
+          stroke="#000"
+          strokeWidth="3"
         />
-
-        {/* Grain direction indicator */}
-        {part.grainDirection === 'vertical' ? (
-          <>
-            <line x1={padding + 10} y1={padding + 10} x2={padding + 10} y2={padding + partHeight - 10} stroke="#95a5a6" strokeWidth="1" strokeDasharray="2 2" />
-            <line x1={padding + 20} y1={padding + 10} x2={padding + 20} y2={padding + partHeight - 10} stroke="#95a5a6" strokeWidth="1" strokeDasharray="2 2" />
-            <line x1={padding + 30} y1={padding + 10} x2={padding + 30} y2={padding + partHeight - 10} stroke="#95a5a6" strokeWidth="1" strokeDasharray="2 2" />
-          </>
-        ) : (
-          <>
-            <line x1={padding + 10} y1={padding + 10} x2={padding + partWidth - 10} y2={padding + 10} stroke="#95a5a6" strokeWidth="1" strokeDasharray="2 2" />
-            <line x1={padding + 10} y1={padding + 20} x2={padding + partWidth - 10} y2={padding + 20} stroke="#95a5a6" strokeWidth="1" strokeDasharray="2 2" />
-            <line x1={padding + 10} y1={padding + 30} x2={padding + partWidth - 10} y2={padding + 30} stroke="#95a5a6" strokeWidth="1" strokeDasharray="2 2" />
-          </>
-        )}
 
         {/* Draw cuts (dados, rabbets, etc.) */}
         {part.cuts && part.cuts.map((cut, index) => {
+          // Skip drill holes - they're drawn separately below
+          if (cut.type === 'drill') {
+            return null;
+          }
+
           let cutX, cutY, cutWidth, cutHeight;
           
           if (cut.location === 'top edge') {
@@ -96,104 +77,50 @@ function PartDetailView({ part }) {
             cutY = padding;
             cutWidth = cut.width * scale;
             cutHeight = partHeight;
+          } else if (cut.location === 'face') {
+            // Horizontal dado across the face (for shelves)
+            cutX = padding;
+            cutY = padding + (cut.distanceFromEdge * scale);
+            cutWidth = partWidth;
+            cutHeight = cut.width * scale;
           }
 
           return (
             <g key={index}>
-              {/* Cut area - different patterns for different types */}
+              {/* Cut area - simple rectangle showing the dado/rabbet */}
               <rect
                 x={cutX}
                 y={cutY}
                 width={cutWidth}
                 height={cutHeight}
-                fill={cut.type === 'dado' ? '#e74c3c' : '#3498db'}
-                opacity="0.3"
-                stroke={cut.type === 'dado' ? '#c0392b' : '#2980b9'}
-                strokeWidth="1"
-                strokeDasharray="4 2"
-              />
-              
-              {/* Depth indicator */}
-              <text
-                x={cutX + cutWidth / 2}
-                y={cutY + cutHeight / 2}
-                textAnchor="middle"
-                fontSize="10"
-                fill="#2c3e50"
-                fontWeight="bold"
-              >
-                {cut.type.toUpperCase()} {cut.depth.toFixed(3)}" deep
-              </text>
-
-              {/* Cut dimension line */}
-              <line
-                x1={cutX}
-                y1={cutY - 5}
-                x2={cutX + cutWidth}
-                y2={cutY - 5}
+                fill="none"
                 stroke="#e74c3c"
-                strokeWidth="1"
-                markerEnd="url(#arrowhead-detail)"
+                strokeWidth="2"
               />
-              <text
-                x={cutX + cutWidth / 2}
-                y={cutY - 10}
-                textAnchor="middle"
-                fontSize="9"
-                fill="#e74c3c"
-              >
-                {cut.width.toFixed(3)}" wide
-              </text>
             </g>
           );
         })}
 
-        {/* Overall dimensions */}
-        {/* Width dimension */}
-        <line
-          x1={padding}
-          y1={padding - 30}
-          x2={padding + partWidth}
-          y2={padding - 30}
-          stroke="#2c3e50"
-          strokeWidth="1"
-          markerEnd="url(#arrowhead-detail)"
-        />
-        <line x1={padding} y1={padding - 35} x2={padding} y2={padding - 25} stroke="#2c3e50" strokeWidth="1" />
-        <line x1={padding + partWidth} y1={padding - 35} x2={padding + partWidth} y2={padding - 25} stroke="#2c3e50" strokeWidth="1" />
-        <text
-          x={padding + partWidth / 2}
-          y={padding - 35}
-          textAnchor="middle"
-          fontSize="12"
-          fill="#2c3e50"
-          fontWeight="bold"
-        >
-          {part.width}"
-        </text>
+        {/* Draw drill holes */}
+        {part.cuts && part.cuts.filter(cut => cut.type === 'drill').map((cut, index) => {
+          const holeX = padding + (cut.x * scale);
+          const holeY = padding + (cut.y * scale);
+          const radius = (cut.diameter / 2) * scale;
 
-        {/* Height dimension */}
-        <line
-          x1={padding + partWidth + 30}
-          y1={padding}
-          x2={padding + partWidth + 30}
-          y2={padding + partHeight}
-          stroke="#2c3e50"
-          strokeWidth="1"
-        />
-        <line x1={padding + partWidth + 25} y1={padding} x2={padding + partWidth + 35} y2={padding} stroke="#2c3e50" strokeWidth="1" />
-        <line x1={padding + partWidth + 25} y1={padding + partHeight} x2={padding + partWidth + 35} y2={padding + partHeight} stroke="#2c3e50" strokeWidth="1" />
-        <text
-          x={padding + partWidth + 45}
-          y={padding + partHeight / 2}
-          textAnchor="middle"
-          fontSize="12"
-          fill="#2c3e50"
-          fontWeight="bold"
-          transform={`rotate(-90, ${padding + partWidth + 45}, ${padding + partHeight / 2})`}
-        >
-          {part.height}"
-        </text>
+          return (
+            <g key={`drill-${index}`}>
+              {/* Simple circle for drill hole */}
+              <circle
+                cx={holeX}
+                cy={holeY}
+                r={radius}
+                fill="none"
+                stroke="#2196F3"
+                strokeWidth="1"
+              />
+            </g>
+          );
+        })}
       </svg>
 
       {/* Cut details list */}
@@ -218,12 +145,22 @@ function PartDetailView({ part }) {
                 <tr key={index}>
                   <td>{index + 1}</td>
                   <td className="cut-type">{cut.type.toUpperCase()}</td>
-                  <td>{cut.location}</td>
-                  <td>{cut.distanceFromEdge}"</td>
-                  <td>{cut.width.toFixed(3)}"</td>
-                  <td className="depth">{cut.depth.toFixed(3)}"</td>
-                  <td>{cut.length}"</td>
-                  <td className="notes">{cut.notes}</td>
+                  <td>{cut.location || (cut.type === 'drill' ? 'Face' : '-')}</td>
+                  <td>
+                    {cut.distanceFromEdge ? 
+                      `${cut.distanceFromEdge}"` : 
+                      (cut.y ? `${cut.y.toFixed(3)}" from bottom` : '-')
+                    }
+                  </td>
+                  <td>{cut.width ? `${cut.width.toFixed(3)}"` : (cut.diameter ? `Ø${cut.diameter}"` : '-')}</td>
+                  <td className="depth">{cut.depth ? `${cut.depth.toFixed(3)}"` : (cut.type === 'drill' ? 'Through' : '-')}</td>
+                  <td>
+                    {cut.length ? 
+                      `${cut.length}"` : 
+                      (cut.x ? `${cut.x}" from edge` : '-')
+                    }
+                  </td>
+                  <td className="notes">{cut.notes || ''}</td>
                 </tr>
               ))}
             </tbody>

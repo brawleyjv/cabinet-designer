@@ -10,11 +10,11 @@ import PdfService from './pdfService';
 class ZipService {
   /**
    * Create a ZIP bundle with all exports
-   * @param {Object} data - Object containing parts, sheets, and cabinetInfo
+   * @param {Object} data - Object containing parts and cabinetInfo
    * @returns {Promise} ZIP blob
    */
   static async createBundle(data) {
-    const { parts, sheets, cabinetInfo } = data;
+    const { parts, cabinetInfo } = data;
     const zip = new JSZip();
 
     // Create folders
@@ -22,9 +22,9 @@ class ZipService {
     const csvFolder = zip.folder('CSV_Files');
     const pdfFolder = zip.folder('PDF_Files');
 
-    // Generate DXF files
+    // Generate DXF files (single file with all parts)
     const dxfService = new DxfService();
-    const dxfFiles = dxfService.exportSheets(sheets, cabinetInfo);
+    const dxfFiles = dxfService.exportParts(parts, cabinetInfo);
     dxfFiles.forEach(file => {
       dxfFolder.file(file.filename, file.content);
     });
@@ -33,18 +33,12 @@ class ZipService {
     const cutListCSV = CsvService.exportCutList(parts, cabinetInfo);
     csvFolder.file('Cut_List.csv', cutListCSV);
 
-    const sheetLayoutCSV = CsvService.exportSheetLayout(sheets);
-    csvFolder.file('Sheet_Layout.csv', sheetLayoutCSV);
-
     // Generate PDF files
     const cutListPDF = PdfService.exportCutListPDF(parts, cabinetInfo);
     pdfFolder.file('Cut_List.pdf', cutListPDF.output('blob'));
 
-    const sheetLayoutPDF = PdfService.exportSheetLayoutPDF(sheets, cabinetInfo);
-    pdfFolder.file('Sheet_Layout.pdf', sheetLayoutPDF.output('blob'));
-
     // Add README
-    const readme = this.generateReadme(cabinetInfo, parts, sheets);
+    const readme = this.generateReadme(cabinetInfo, parts);
     zip.file('README.txt', readme);
 
     // Generate ZIP
@@ -54,10 +48,9 @@ class ZipService {
   /**
    * Generate README content
    */
-  static generateReadme(cabinetInfo, parts, sheets) {
+  static generateReadme(cabinetInfo, parts) {
     const totalParts = parts.reduce((sum, p) => sum + p.quantity, 0);
     const totalArea = parts.reduce((sum, p) => sum + (p.width * p.height * p.quantity), 0);
-    const avgEfficiency = sheets.reduce((sum, s) => sum + s.efficiency, 0) / sheets.length;
 
     return `
 CABINET DESIGN EXPORT
@@ -74,10 +67,10 @@ PARTS SUMMARY:
 - Total Material Area: ${totalArea.toFixed(2)} sq in
 - Unique Part Types: ${parts.length}
 
-SHEET LAYOUT SUMMARY:
-- Total Sheets Required: ${sheets.length}
-- Average Efficiency: ${avgEfficiency.toFixed(1)}%
-- Sheet Size: ${sheets[0]?.width}" × ${sheets[0]?.height}"
+DXF FILES:
+- All parts are included in a single DXF file
+- Import into Aspire/VCarve for nesting optimization
+- Layers: CUT (red), POCKET (blue), DRILL (green), LABEL (black)
 
 FILES INCLUDED:
 /DXF_Files/ - CNC-ready DXF files (one per sheet)
